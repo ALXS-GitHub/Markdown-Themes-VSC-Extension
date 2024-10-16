@@ -10,6 +10,8 @@ This is a theme extension for the [alxs](https://github.com/ALXS-GitHub) Theme i
 4. Select the downloaded file
 5. Reload VS Code
 
+For the ALXS_MD_THEME_PATH env variable you should set it manually in your environment. Make sure that it is set properly to the /themes folder of the Markdown-Themes repository.
+
 ## Usage
 
 By right clicking in a markdown file, the menu will appear. Here you can chose any of the options to customize your markdown file.

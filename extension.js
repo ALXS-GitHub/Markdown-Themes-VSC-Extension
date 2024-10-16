@@ -2,10 +2,13 @@
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require("vscode");
 const fs = require("fs");
-const { mdToHtml } = require("./mdtohtml.js");
-const { htmlToPdf } = require("./htmltopdf.js");
-const { onePageHtmlToPdf } = require("./onepagehtmltopdf.js");
-const { convertToTable } = require("./convertToTable.js");
+const path = require("path");
+
+const MD_TO_PDF_SUBMODULE_PATH = "./src/Markdown-to-Pdf/markdown-to-pdf/src/";
+const { mdToHtml } = require(MD_TO_PDF_SUBMODULE_PATH + "mdToHtml.js");
+const { htmlToPdf } = require(MD_TO_PDF_SUBMODULE_PATH + "./htmlToPdf.js");
+const { convertToTable } = require("./src/components/convertToTable.js");
+const { startServer } = require("./src/server.js");
 
 const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 
@@ -19,9 +22,16 @@ function activate(context) {
     // & test command
     // Use the console to output diagnostic information (console.log) and errors (console.error)
     // This line of code will only be executed once when your extension is activated
+
+    startServer();
+
     console.log(
         'Congratulations, your extension "alxs-theme-extension" is now active!'
     );
+
+    // Auto update snippets
+    // TODO activate this later if it works very well at some point
+    // autoUpdateSnippets(context);
 
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with  registerCommand
@@ -134,14 +144,32 @@ function activate(context) {
     }
 
     // & Add theme
-    let themes = ["Aesthetic", "ALXS-white"];
-    let customisableThemes = ["Aesthetic"];
+    let themes = ["Aesthetic", "ALXS-white", "CheatSheet"];
+    let customisableThemes = ["Aesthetic", "CheatSheet"];
 
     for (let theme of themes) {
         let disposableTheme = vscode.commands.registerCommand(
-            `alxs-theme-extension.addTheme${theme.toLowerCase()}`,
+            `alxs-theme-extension.addTheme_${theme.toLowerCase()}`,
             function () {
-                let content = `<script src=\"https://cdn.jsdelivr.net/gh/ALXS-GitHub/Markdown-Themes@latest/${theme}/cdnimport.js\"></script>\n`;
+                // * deprecated, this is the old version using the cdn, now we use the local version
+                // let content = `<script src=\"https://cdn.jsdelivr.net/gh/ALXS-GitHub/Markdown-Themes@latest/${theme}/cdnimport.js\"></script>\n`;
+
+                let envVarPath = process.env.ALXS_MD_THEME_PATH;
+                console.log(process.env);
+                if (!envVarPath) {
+                    vscode.window.showErrorMessage("ALXS_MD_THEME_PATH is not set");
+                    return;
+                }
+
+                let currentFilePath = vscode.window.activeTextEditor.document.uri.fsPath;
+                
+                // Calculate the relative path to the root
+                let relativePath = path.relative(path.dirname(currentFilePath), path.parse(currentFilePath).root);
+                let relativeThemePath = path.join(relativePath, envVarPath);
+                let relativeImportJSPath = path.join(relativeThemePath, theme, "import.js");
+
+                // Initialize content with the local path
+                let content = `<script src="${relativeImportJSPath}"></script>\n`;
 
                 if (customisableThemes.includes(theme)) {
                     content +=
@@ -810,7 +838,7 @@ function activate(context) {
 
             let outputHtml;
             try {
-                outputHtml = mdToHtml(filePath);
+                outputHtml = mdToHtml(filePath, vscode);
             } catch (error) {
                 console.log(error);
                 statusBarItem.hide();
@@ -818,7 +846,7 @@ function activate(context) {
             }
             
             console.log(outputHtml);
-            htmlToPdf(outputHtml).then(() => {
+            htmlToPdf(outputHtml, false, vscode).then(() => {
                 try {
                     fs.unlinkSync(outputHtml);
                 } catch (error) {
@@ -847,7 +875,7 @@ function activate(context) {
 
             let outputHtml;
             try {
-                outputHtml = mdToHtml(filePath);
+                outputHtml = mdToHtml(filePath, vscode);
             } catch (error) {
                 console.log(error);
                 statusBarItem.hide();
@@ -855,7 +883,7 @@ function activate(context) {
             }
             
             console.log(outputHtml);
-            onePageHtmlToPdf(outputHtml).then(() => {
+            htmlToPdf(outputHtml, true, vscode).then(() => {
                 try {
                     fs.unlinkSync(outputHtml);
                 } catch (error) {
@@ -900,13 +928,19 @@ function activate(context) {
                             {
                                 label: "Aesthetic",
                                 command:
-                                    "alxs-theme-extension.addThemeaesthetic",
+                                    "alxs-theme-extension.addTheme_aesthetic",
                             },
                             {
                                 label: "ALXS-white",
                                 command:
-                                    "alxs-theme-extension.addThemealxs-white",
+                                    "alxs-theme-extension.addTheme_alxs-white",
                             },
+                            {
+                                label: "CheatSheet",
+                                command:
+                                    "alxs-theme-extension.addTheme_cheatsheet",
+                            }
+
                         ];
                     case "color":
                         return [

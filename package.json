@@ -3,14 +3,16 @@
     "displayName": "ALXS-Theme-Extension",
     "description": "This extension is made to use the ALXS Markdown Themes more easly",
     "icon": "icon.jpg",
-    "version": "0.0.11",
+    "version": "0.1.0",
     "engines": {
         "vscode": "^1.84.0"
     },
     "categories": [
         "Other"
     ],
-    "activationEvents": [],
+    "activationEvents": [
+        "*" 
+    ],
     "main": "./extension.js",
     "contributes": {
         "viewsContainers": {
@@ -33,42 +35,42 @@
         "keybindings": [
             {
                 "command": "alxs-theme-extension.colorblue",
-                "key":"ctrl+shift+alt+b",
+                "key": "ctrl+shift+alt+b",
                 "when": "editorTextFocus && resourceLangId == markdown"
             },
             {
                 "command": "alxs-theme-extension.colorred",
-                "key":"ctrl+shift+alt+r",
+                "key": "ctrl+shift+alt+r",
                 "when": "editorTextFocus && resourceLangId == markdown"
             },
             {
                 "command": "alxs-theme-extension.colorgreen",
-                "key":"ctrl+shift+alt+g",
+                "key": "ctrl+shift+alt+g",
                 "when": "editorTextFocus && resourceLangId == markdown"
             },
             {
                 "command": "alxs-theme-extension.colororange",
-                "key":"ctrl+shift+alt+o",
+                "key": "ctrl+shift+alt+o",
                 "when": "editorTextFocus && resourceLangId == markdown"
             },
             {
                 "command": "alxs-theme-extension.colorpurple",
-                "key":"ctrl+shift+alt+v",
+                "key": "ctrl+shift+alt+v",
                 "when": "editorTextFocus && resourceLangId == markdown"
             },
             {
                 "command": "alxs-theme-extension.colorpink",
-                "key":"ctrl+shift+alt+p",
+                "key": "ctrl+shift+alt+p",
                 "when": "editorTextFocus && resourceLangId == markdown"
             },
             {
                 "command": "alxs-theme-extension.coloryellow",
-                "key":"ctrl+shift+alt+y",
+                "key": "ctrl+shift+alt+y",
                 "when": "editorTextFocus && resourceLangId == markdown"
             },
             {
                 "command": "alxs-theme-extension.colorwhite",
-                "key":"ctrl+shift+alt+w",
+                "key": "ctrl+shift+alt+w",
                 "when": "editorTextFocus && resourceLangId == markdown"
             }
         ],
@@ -158,12 +160,16 @@
                 "title": "Highlight White"
             },
             {
-                "command": "alxs-theme-extension.addThemeaesthetic",
+                "command": "alxs-theme-extension.addTheme_aesthetic",
                 "title": "Add Theme Aesthetic"
             },
             {
-                "command": "alxs-theme-extension.addThemealxs-white",
+                "command": "alxs-theme-extension.addTheme_alxs-white",
                 "title": "Add Theme ALXS-white"
+            },
+            {
+                "command": "alxs-theme-extension.addTheme_cheatsheet",
+                "title": "Add Theme Cheatsheet"
             },
             {
                 "command": "alxs-theme-extension.componentsfnote",
@@ -595,11 +601,15 @@
             ],
             "AddTheme": [
                 {
-                    "command": "alxs-theme-extension.addThemeaesthetic",
+                    "command": "alxs-theme-extension.addTheme_aesthetic",
                     "when": "editorTextFocus && resourceLangId == markdown"
                 },
                 {
-                    "command": "alxs-theme-extension.addThemealxs-white",
+                    "command": "alxs-theme-extension.addTheme_alxs-white",
+                    "when": "editorTextFocus && resourceLangId == markdown"
+                },
+                {
+                    "command": "alxs-theme-extension.addTheme_cheatsheet",
                     "when": "editorTextFocus && resourceLangId == markdown"
                 }
             ],
@@ -635,7 +645,7 @@
                 {
                     "command": "alxs-theme-extension.date",
                     "when": "editorTextFocus && resourceLangId == markdown"
-                }, 
+                },
                 {
                     "command": "alxs-theme-extension.image",
                     "when": "editorTextFocus && resourceLangId == markdown"
@@ -974,6 +984,7 @@
         "vscode": "^1.1.37"
     },
     "dependencies": {
+        "express": "^4.21.1",
         "gray-matter": "^4.0.3",
         "highlight.js": "^11.9.0",
         "markdown-it": "^13.0.2",

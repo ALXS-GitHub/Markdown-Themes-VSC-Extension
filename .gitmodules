@@ -1,0 +1,3 @@
+[submodule "src/Markdown-to-Pdf"]
+	path = src/Markdown-to-Pdf
+	url = git@github.com:ALXS-GitHub/Markdown-to-Pdf.git
