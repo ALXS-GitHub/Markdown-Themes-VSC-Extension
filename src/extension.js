@@ -7,7 +7,6 @@ const path = require("path");
 const MD_TO_PDF_SUBMODULE_PATH = "./Markdown-to-Pdf/markdown-to-pdf/src/";
 const { mdToHtml } = require(MD_TO_PDF_SUBMODULE_PATH + "mdToHtml.js");
 const { htmlToPdf } = require(MD_TO_PDF_SUBMODULE_PATH + "./htmlToPdf.js");
-const { convertToTable } = require("./components/convertToTable.js");
 const { startServer, stopServer, restartServer } = require("./server.js");
 
 const config = require('./config.js'); // the config variables of the extension
@@ -78,480 +77,52 @@ function activate(context) {
 
     // & grids
 
-    let sizes = ["2", "3"];
-    for (let size of sizes) {
-        let disposableGrid = vscode.commands.registerCommand(
-            `alxs-theme-extension.grids${size}`,
-            function () {
-                let editor = vscode.window.activeTextEditor;
-                if (!editor) {
-                    return; // No open text editor
-                }
-
-                let selection = editor.selection;
-                let text = editor.document.getText(selection);
-                text = text.replace(/\n/g, "\n\t");
-
-                let content = `<div class="grid-container c${size}">\n`;
-                content += `\t<div class="grid-item">\n\t\t${text}\n\t</div>\n`;
-                let intSize = parseInt(size);
-                console.log(size + intSize + "\n");
-                for (let i = 1; i < intSize; i++) {
-                    content += `\t<div class="grid-item">\n\t</div>\n`;
-                }
-
-                content += `</div>`;
-
-                editor.edit((editBuilder) => {
-                    editBuilder.replace(selection, content);
-                });
-            }
-        );
-
-        context.subscriptions.push(disposableGrid);
-    }
-
+    commands.setCommandGrids(context, vscode);
+    
     // & blank line
 
-    let disposableBlank = vscode.commands.registerCommand(
-        `alxs-theme-extension.blank`,
-        function () {
-            let editor = vscode.window.activeTextEditor;
-            if (!editor) {
-                return; // No open text editor
-            }
-
-            let position = editor.selection.active;
-            editor.edit((editBuilder) => {
-                editBuilder.insert(position, `<blank></blank>`);
-            });
-        }
-    );
-
-    context.subscriptions.push(disposableBlank);
+    commands.setCommandBlankLine(context, vscode);
 
     // & Alignements
 
-    let alignements = ["left", "center", "right"];
-
-    for (let alignement of alignements) {
-        let disposableAlignement = vscode.commands.registerCommand(
-            `alxs-theme-extension.alignements${alignement}`,
-            function () {
-                let editor = vscode.window.activeTextEditor;
-                if (!editor) {
-                    return; // No open text editor
-                }
-
-                let selection = editor.selection;
-                let text = editor.document.getText(selection);
-
-                editor
-                    .edit((editBuilder) => {
-                        editBuilder.replace(
-                            selection,
-                            `<p class="${alignement}">${text}</p>`
-                        );
-                    })
-                    .then((success) => {
-                        // Move cursor to the end of the text
-                        if (success) {
-                            let position = editor.selection.start;
-                            let newPosition = position.translate(
-                                0,
-                                12 + alignement.length + text.length
-                            ); // 3 is the length of "<h>"
-                            let newSelection = new vscode.Selection(
-                                newPosition,
-                                newPosition
-                            );
-                            editor.selection = newSelection;
-                        }
-                    });
-            }
-        );
-
-        context.subscriptions.push(disposableAlignement);
-    }
+    commands.setCommandAlignements(context, vscode);
 
     // & Text effects
 
-    let effects = ["b", "i", "u", "s"];
-
-    for (let effect of effects) {
-        let disposableEffect = vscode.commands.registerCommand(
-            `alxs-theme-extension.effects${effect}`,
-            function () {
-                let editor = vscode.window.activeTextEditor;
-                if (!editor) {
-                    return; // No open text editor
-                }
-
-                let selection = editor.selection;
-                let text = editor.document.getText(selection);
-
-                editor
-                    .edit((editBuilder) => {
-                        editBuilder.replace(
-                            selection,
-                            `<${effect}>${text}</${effect}>`
-                        );
-                    })
-                    .then((success) => {
-                        // Move cursor to the end of the text
-                        if (success) {
-                            let position = editor.selection.start;
-                            let newPosition = position.translate(
-                                0,
-                                2 + effect.length + text.length
-                            ); // 3 is the length of "<h>"
-                            let newSelection = new vscode.Selection(
-                                newPosition,
-                                newPosition
-                            );
-                            editor.selection = newSelection;
-                        }
-                    });
-            }
-        );
-
-        context.subscriptions.push(disposableEffect);
-    }
+    commands.setCommandTextEffects(context, vscode);    
 
     // & Author component
 
-    let disposableAuthor = vscode.commands.registerCommand(
-        `alxs-theme-extension.author`,
-        function () {
-            let editor = vscode.window.activeTextEditor;
-            if (!editor) {
-                return; // No open text editor
-            }
-
-            let selection = editor.selection;
-            let text = editor.document.getText(selection);
-
-            editor
-                .edit((editBuilder) => {
-                    editBuilder.replace(selection, `<author>${text}</author>`);
-                })
-                .then((success) => {
-                    // Move cursor to the end of the text
-                    if (success) {
-                        let position = editor.selection.start;
-                        let newPosition = position.translate(
-                            0,
-                            8 + text.length
-                        ); // 3 is the length of "<h>"
-                        let newSelection = new vscode.Selection(
-                            newPosition,
-                            newPosition
-                        );
-                        editor.selection = newSelection;
-                    }
-                });
-        }
-    );
-
-    context.subscriptions.push(disposableAuthor);
+    commands.setCommandAuthor(context, vscode);
 
     // & Date component
 
-    let disposableDate = vscode.commands.registerCommand(
-        `alxs-theme-extension.date`,
-        function () {
-            let editor = vscode.window.activeTextEditor;
-            if (!editor) {
-                return; // No open text editor
-            }
-
-            let selection = editor.selection;
-            let text = editor.document.getText(selection);
-
-            editor
-                .edit((editBuilder) => {
-                    editBuilder.replace(selection, `<date>${text}</date>`);
-                })
-                .then((success) => {
-                    // Move cursor to the end of the text
-                    if (success) {
-                        let position = editor.selection.start;
-                        let newPosition = position.translate(
-                            0,
-                            6 + text.length
-                        ); // 3 is the length of "<h>"
-                        let newSelection = new vscode.Selection(
-                            newPosition,
-                            newPosition
-                        );
-                        editor.selection = newSelection;
-                    }
-                });
-        }
-    );
-
-    context.subscriptions.push(disposableDate);
+    commands.setCommandDate(context, vscode);
 
     // & Font size
 
-    let sizesFont = [
-        "6",
-        "8",
-        "10",
-        "12",
-        "14",
-        "16",
-        "18",
-        "20",
-        "24",
-        "28",
-        "32",
-        "36",
-        "40",
-        "44",
-        "48",
-        "52",
-    ];
-
-    for (let size of sizesFont) {
-        let disposableSize = vscode.commands.registerCommand(
-            `alxs-theme-extension.fontsize${size}`,
-            function () {
-                let editor = vscode.window.activeTextEditor;
-                if (!editor) {
-                    return; // No open text editor
-                }
-
-                let selection = editor.selection;
-                let text = editor.document.getText(selection);
-
-                editor
-                    .edit((editBuilder) => {
-                        editBuilder.replace(
-                            selection,
-                            `<span class="f${size}">${text}</span>`
-                        );
-                    })
-                    .then((success) => {
-                        // Move cursor to the end of the text
-                        if (success) {
-                            let position = editor.selection.start;
-                            let newPosition = position.translate(
-                                0,
-                                16 + size.length + text.length
-                            ); // 3 is the length of "<h>"
-                            let newSelection = new vscode.Selection(
-                                newPosition,
-                                newPosition
-                            );
-                            editor.selection = newSelection;
-                        }
-                    });
-            }
-        );
-
-        context.subscriptions.push(disposableSize);
-    }
+    commands.setCommandFontSize(context, vscode);
 
     // & image component
 
-    let disposableImage = vscode.commands.registerCommand(
-        `alxs-theme-extension.image`,
-        function () {
-            let editor = vscode.window.activeTextEditor;
-            if (!editor) {
-                return; // No open text editor
-            }
-
-            let selection = editor.selection;
-            let text = editor.document.getText(selection);
-
-            editor
-                .edit((editBuilder) => {
-                    editBuilder.replace(
-                        selection,
-                        `<img src="${text}" style="width: auto; height: auto" class="" alt=""/>`
-                    );
-                })
-                .then((success) => {
-                    // Move cursor to the end of the text
-                    if (success) {
-                        let position = editor.selection.start;
-                        let newPosition = position.translate(
-                            0,
-                            10 + text.length
-                        ); // 3 is the length of "<h>"
-                        let newSelection = new vscode.Selection(
-                            newPosition,
-                            newPosition
-                        );
-                        editor.selection = newSelection;
-                    }
-                });
-        }
-    );
-
-    context.subscriptions.push(disposableImage);
+    commands.setCommandImage(context, vscode);
 
     // & tab component
 
-    let disposableTab = vscode.commands.registerCommand(
-        `alxs-theme-extension.tab`,
-        function () {
-            let editor = vscode.window.activeTextEditor;
-            if (!editor) {
-                return; // No open text editor
-            }
-
-            let position = editor.selection.active;
-            editor.edit((editBuilder) => {
-                editBuilder.insert(position, `<tab></tab>`);
-            });
-        }
-    );
+    commands.setCommandTab(context, vscode);
 
     // & table component
 
-    let tableColors = [
-        "red",
-        "blue",
-        "green",
-        "orange",
-        "yellow",
-        "purple",
-        "pink",
-        "white",
-        "color",
-    ];
-    
-    for (let color of tableColors) {
-        let disposableTable = vscode.commands.registerCommand(
-            `alxs-theme-extension.table${color}`,
-            function () {
-                let editor = vscode.window.activeTextEditor;
-                if (!editor) {
-                    return; // No open text editor
-                }
-
-                let content = `<table class="${color}table left">\n`;
-                content += `\t<thead>\n\t\t<tr>\n\t\t\t<th colspan="1"></th>\n\t\t\t<th colspan="1"></th>\n\t\t</tr>\n\t</thead>\n`;
-                content += `\t<tbody>\n\t\t<tr>\n\t\t\t<td rowspan="1"></td>\n\t\t\t<td rowspan="1"></td>\n\t\t</tr>\n`;
-                content += `\t\t<tr>\n\t\t\t<td rowspan="1"></td>\n\t\t\t<td rowspan="1"></td>\n\t\t</tr>\n\t</tbody>\n`;
-                content += `</table>`;
-    
-                let position = editor.selection.active;
-                editor.edit((editBuilder) => {
-                    editBuilder.insert(position, content);
-                });
-
-            }
-        );
-
-        context.subscriptions.push(disposableTable);
-    }
-        
+    commands.setCommandTables(context, vscode);
     
     // & convert to table
         
-    let disposableConvertToTable = vscode.commands.registerCommand(
-        `alxs-theme-extension.convertToTable`,
-        function () {
-            let editor = vscode.window.activeTextEditor;
-            if (!editor) {
-                return; // No open text editor
-            }
-    
-            let selection = editor.selection;
-            let text = editor.document.getText(selection);
-    
-            let table = convertToTable(text);
-    
-            editor.edit((editBuilder) => {
-                editBuilder.replace(selection, table);
-            });
-        }
-    );
-
-    context.subscriptions.push(disposableConvertToTable);
-
+    commands.setCommandConvertToTable(context, vscode);
 
     // µ Md to pdf commands
 
-    let disposableMdToPdf = vscode.commands.registerCommand(
-        "alxs-theme-extension.mdToPdf",
-        function () {
-
-            statusBarItem.text = "$(sync~spin) Converting to PDF...";
-            statusBarItem.show();
-
-            let editor = vscode.window.activeTextEditor;
-            if (!editor) {
-                statusBarItem.hide();
-                return; // No open text editor
-            }
-
-            let filePath = editor.document.uri.fsPath;
-
-            let outputHtml;
-            try {
-                outputHtml = mdToHtml(filePath, vscode);
-            } catch (error) {
-                console.log(error);
-                statusBarItem.hide();
-                return;
-            }
-            
-            console.log(outputHtml);
-            htmlToPdf(outputHtml, false, vscode).then(() => {
-                try {
-                    fs.unlinkSync(outputHtml);
-                } catch (error) {
-                    console.log(error);
-                }
-                statusBarItem.hide();
-            });
-
-        }
-    );
-
-    let disposableOnePageMdToPdf = vscode.commands.registerCommand(
-        "alxs-theme-extension.onePageMdToPdf",
-        function () {
-
-            statusBarItem.text = "$(sync~spin) Converting to PDF...";
-            statusBarItem.show();
-
-            let editor = vscode.window.activeTextEditor;
-            if (!editor) {
-                statusBarItem.hide();
-                return; // No open text editor
-            }
-
-            let filePath = editor.document.uri.fsPath;
-
-            let outputHtml;
-            try {
-                outputHtml = mdToHtml(filePath, vscode);
-            } catch (error) {
-                console.log(error);
-                statusBarItem.hide();
-                return;
-            }
-            
-            console.log(outputHtml);
-            htmlToPdf(outputHtml, true, vscode).then(() => {
-                try {
-                    fs.unlinkSync(outputHtml);
-                } catch (error) {
-                    console.log(error);
-                }
-                statusBarItem.hide();
-            });
-
-        }
-    );
-
-    context.subscriptions.push(disposableMdToPdf);
+    commands.setCommandMdToPdf(context, vscode, statusBarItem, mdToHtml, htmlToPdf);
+    commands.setCommandOnePageMdToPdf(context, vscode, statusBarItem, mdToHtml, htmlToPdf);
 
     // µ TreeView
 

@@ -3,6 +3,7 @@
 ## Important
 
 - [ ] Organize the code in a better and more readable way.
+- [ ] Try to have aliases for file import (when using require) -> this could be useful in the file where we set the command for pdf conversion where we could avoid passing the conversion functions as arguments.
 
 ## Medium
 
