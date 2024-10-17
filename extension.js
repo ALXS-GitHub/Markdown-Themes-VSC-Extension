@@ -8,7 +8,10 @@ const MD_TO_PDF_SUBMODULE_PATH = "./src/Markdown-to-Pdf/markdown-to-pdf/src/";
 const { mdToHtml } = require(MD_TO_PDF_SUBMODULE_PATH + "mdToHtml.js");
 const { htmlToPdf } = require(MD_TO_PDF_SUBMODULE_PATH + "./htmlToPdf.js");
 const { convertToTable } = require("./src/components/convertToTable.js");
-const { startServer } = require("./src/server.js");
+const { startServer, stopServer, restartServer } = require("./src/server.js");
+
+const config = require('./src/config.js'); // the config variables of the extension
+let server;
 
 const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
 
@@ -19,15 +22,26 @@ const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignmen
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
-    // & test command
-    // Use the console to output diagnostic information (console.log) and errors (console.error)
-    // This line of code will only be executed once when your extension is activated
 
-    startServer();
+    // § Get some important config variables
+    let vscConfig = vscode.workspace.getConfiguration("alxs-theme-extension"); // the vscode configuration settings that are manageable by the user
+    let ALXS_MD_THEME_PATH = vscConfig.get("ALXS_MD_THEME_PATH");
+
+    // § Start the server
+    server = startServer(vscConfig);
 
     console.log(
         'Congratulations, your extension "alxs-theme-extension" is now active!'
     );
+
+    let disposableServer = vscode.commands.registerCommand(
+        "alxs-theme-extension.restartServer",
+        function () {
+            restartServer(server, vscConfig);
+        }
+    );
+
+    context.subscriptions.push(disposableServer);
 
     // Auto update snippets
     // TODO activate this later if it works very well at some point
@@ -154,22 +168,8 @@ function activate(context) {
                 // * deprecated, this is the old version using the cdn, now we use the local version
                 // let content = `<script src=\"https://cdn.jsdelivr.net/gh/ALXS-GitHub/Markdown-Themes@latest/${theme}/cdnimport.js\"></script>\n`;
 
-                let envVarPath = process.env.ALXS_MD_THEME_PATH;
-                console.log(process.env);
-                if (!envVarPath) {
-                    vscode.window.showErrorMessage("ALXS_MD_THEME_PATH is not set");
-                    return;
-                }
-
-                let currentFilePath = vscode.window.activeTextEditor.document.uri.fsPath;
-                
-                // Calculate the relative path to the root
-                let relativePath = path.relative(path.dirname(currentFilePath), path.parse(currentFilePath).root);
-                let relativeThemePath = path.join(relativePath, envVarPath);
-                let relativeImportJSPath = path.join(relativeThemePath, theme, "import.js");
-
                 // Initialize content with the local path
-                let content = `<script src="${relativeImportJSPath}"></script>\n`;
+                let content = `<script src="${config.THEMES_URL}/${theme}/import.js" defer></script>\n`;
 
                 if (customisableThemes.includes(theme)) {
                     content +=
@@ -920,6 +920,7 @@ function activate(context) {
                     { label: "Text Effects", id: "text-effects", iconPath: vscode.Uri.file(context.asAbsolutePath("media/text-effect/text-effect.png")) },
                     { label: "Convert to PDF", command: "alxs-theme-extension.mdToPdf", iconPath: vscode.Uri.file(context.asAbsolutePath("media/convert-pdf.png"))},
                     { label: "Conversion Options", id: "conversion-options", iconPath: vscode.Uri.file(context.asAbsolutePath("media/convert-pdf.png"))},
+                    { label: "Restart Server", command: "alxs-theme-extension.restartServer", iconPath: new vscode.ThemeIcon('refresh')},
                 ];
             } else
                 switch (element.id) {
@@ -1497,7 +1498,11 @@ function activate(context) {
 }
 
 // This method is called when your extension is deactivated
-function deactivate() {}
+function deactivate() {
+    if (server) {
+        stopServer(server);
+    }
+}
 
 module.exports = {
     activate,

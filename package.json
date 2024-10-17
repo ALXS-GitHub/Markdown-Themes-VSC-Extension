@@ -3,7 +3,7 @@
     "displayName": "ALXS-Theme-Extension",
     "description": "This extension is made to use the ALXS Markdown Themes more easly",
     "icon": "icon.jpg",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "engines": {
         "vscode": "^1.84.0"
     },
@@ -31,6 +31,16 @@
                     "name": "Theme Selection"
                 }
             ]
+        },
+        "configuration": {
+            "type": "object",
+            "properties": {
+                "alxs-theme-extension.ALXS_MD_THEME_PATH": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Path to the Markdown-Themes themes/ folder"
+                }
+            }
         },
         "keybindings": [
             {
@@ -75,6 +85,10 @@
             }
         ],
         "commands": [
+            {
+                "command": "alxs-theme-extension.restartServer",
+                "title": "Restart Theme Server"
+            },
             {
                 "command": "alxs-theme-extension.colorPicker",
                 "title": "Color Picker"

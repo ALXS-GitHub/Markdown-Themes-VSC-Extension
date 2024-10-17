@@ -2,8 +2,27 @@
     "Aesthetic Theme Content": {
         "prefix": "!aesthetic",
         "body": [
-            "$process.env.ALXS_MD_THEME_PATH -- snippet deprecated"
+            "<script src=\"http://localhost:3456/themes/Aesthetic/import.js\" defer></script>",
+            "<script defer>",
+            "\twindow.addEventListener(\"load\", function() {",
+            "\tdocument.color.setColor(\"blue\");",
+            "\tdocument.font.setFont(\"arial\");",
+            "});",
+            "</script>"
         ],
         "description": "Inserts the Aesthetic theme into your markdown file."
+    },
+    "CheatSheet Theme Content": {
+        "prefix": "!cheatsheet",
+        "body": [
+            "<script src=\"http://localhost:3456/themes/CheatSheet/import.js\" defer></script>",
+            "<script defer>",
+            "\twindow.addEventListener(\"load\", function() {",
+            "\tdocument.color.setColor(\"blue\");",
+            "\tdocument.font.setFont(\"arial\");",
+            "});",
+            "</script>"
+        ],
+        "description": "Inserts the CheatSheet theme into your markdown file."
     }
 }
