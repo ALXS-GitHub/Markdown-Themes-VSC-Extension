@@ -32,3 +32,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Added
 
 -   Added new components like text alignment, grids blank lines, bold italic underline and strikethrough
+
+## [0.1.1] - 17-10-2024
+
+Made some big changes to the extension and related repositories
+
+For example, we added a local server to provide the markdown themes. A lot of refactoring was done to improve the code quality and the performance of the extension.

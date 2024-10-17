@@ -2,7 +2,7 @@
     "name": "alxs-theme-extension",
     "displayName": "ALXS-Theme-Extension",
     "description": "This extension is made to use the ALXS Markdown Themes more easly",
-    "icon": "icon.jpg",
+    "icon": "images/icon.jpg",
     "version": "0.1.1",
     "engines": {
         "vscode": "^1.84.0"
@@ -13,14 +13,14 @@
     "activationEvents": [
         "*" 
     ],
-    "main": "./extension.js",
+    "main": "./src/extension.js",
     "contributes": {
         "viewsContainers": {
             "activitybar": [
                 {
                     "id": "alxs-theme",
                     "title": "ALXS Theme Extension",
-                    "icon": "media/extension-logo2.png"
+                    "icon": "./src/media/extension-logo2.png"
                 }
             ]
         },
@@ -92,10 +92,6 @@
             {
                 "command": "alxs-theme-extension.colorPicker",
                 "title": "Color Picker"
-            },
-            {
-                "command": "alxs-theme-extension.helloWorld",
-                "title": "Hello World"
             },
             {
                 "command": "alxs-theme-extension.colorcolor",

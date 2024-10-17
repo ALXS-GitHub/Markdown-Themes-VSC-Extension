@@ -4,13 +4,14 @@ const vscode = require("vscode");
 const fs = require("fs");
 const path = require("path");
 
-const MD_TO_PDF_SUBMODULE_PATH = "./src/Markdown-to-Pdf/markdown-to-pdf/src/";
+const MD_TO_PDF_SUBMODULE_PATH = "./Markdown-to-Pdf/markdown-to-pdf/src/";
 const { mdToHtml } = require(MD_TO_PDF_SUBMODULE_PATH + "mdToHtml.js");
 const { htmlToPdf } = require(MD_TO_PDF_SUBMODULE_PATH + "./htmlToPdf.js");
-const { convertToTable } = require("./src/components/convertToTable.js");
-const { startServer, stopServer, restartServer } = require("./src/server.js");
+const { convertToTable } = require("./components/convertToTable.js");
+const { startServer, stopServer, restartServer } = require("./server.js");
 
-const config = require('./src/config.js'); // the config variables of the extension
+const config = require('./config.js'); // the config variables of the extension
+const commands = require('./commands'); // the commands of the extension
 let server;
 
 const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
@@ -23,9 +24,8 @@ const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignmen
  */
 function activate(context) {
 
-    // § Get some important config variables
+    // § Get the vscode configuration settings
     let vscConfig = vscode.workspace.getConfiguration("alxs-theme-extension"); // the vscode configuration settings that are manageable by the user
-    let ALXS_MD_THEME_PATH = vscConfig.get("ALXS_MD_THEME_PATH");
 
     // § Start the server
     server = startServer(vscConfig);
@@ -43,382 +43,38 @@ function activate(context) {
 
     context.subscriptions.push(disposableServer);
 
-    // Auto update snippets
-    // TODO activate this later if it works very well at some point
-    // autoUpdateSnippets(context);
-
-    // The command has been defined in the package.json file
-    // Now provide the implementation of the command with  registerCommand
-    // The commandId parameter must match the command field in package.json
-    let disposable = vscode.commands.registerCommand(
-        "alxs-theme-extension.helloWorld",
-        function () {
-            // The code you place here will be executed every time your command is executed
-
-            // Display a message box to the user
-            vscode.window.showInformationMessage(
-                "Hello World from ALXS-Theme-Extension!"
-            );
-        }
-    );
-
-    context.subscriptions.push(disposable);
-
     // µ Main theme commands
     // & md text color menu
-    let colors = [
-        "red",
-        "blue",
-        "green",
-        "orange",
-        "yellow",
-        "purple",
-        "pink",
-        "white",
-        "color",
-    ];
-    for (let color of colors) {
-        // @ text color
-        let disposableColor = vscode.commands.registerCommand(
-            `alxs-theme-extension.color${color}`,
-            function () {
-                let editor = vscode.window.activeTextEditor;
-                if (!editor) {
-                    return; // No open text editor
-                }
-
-                let selection = editor.selection;
-                let text = editor.document.getText(selection);
-
-                editor
-                    .edit((editBuilder) => {
-                        editBuilder.replace(
-                            selection,
-                            `<${color}>${text}</${color}>`
-                        );
-                    })
-                    .then((success) => {
-                        // Move cursor to the end of the text
-                        if (success) {
-                            let position = editor.selection.start;
-                            let newPosition = position.translate(
-                                0,
-                                2 + color.length + text.length
-                            ); // 3 is the length of "<h>"
-                            let newSelection = new vscode.Selection(
-                                newPosition,
-                                newPosition
-                            );
-                            editor.selection = newSelection;
-                        }
-                    });
-            }
-        );
-
-        context.subscriptions.push(disposableColor);
-
-        // @ highlight color
-        let disposableHighlight = vscode.commands.registerCommand(
-            `alxs-theme-extension.highlight${color}`,
-            function () {
-                let editor = vscode.window.activeTextEditor;
-                if (!editor) {
-                    return; // No open text editor
-                }
-
-                let selection = editor.selection;
-                let text = editor.document.getText(selection);
-
-                editor
-                    .edit((editBuilder) => {
-                        editBuilder.replace(
-                            selection,
-                            `<h${color}>${text}</h${color}>`
-                        );
-                    })
-                    .then((success) => {
-                        // Move cursor to the end of the text
-                        if (success) {
-                            let position = editor.selection.start;
-                            let newPosition = position.translate(
-                                0,
-                                3 + color.length + text.length
-                            ); // 3 is the length of "<h>"
-                            let newSelection = new vscode.Selection(
-                                newPosition,
-                                newPosition
-                            );
-                            editor.selection = newSelection;
-                        }
-                    });
-            }
-        );
-
-        context.subscriptions.push(disposableHighlight);
-    }
+    
+    commands.setCommandColorText(context, vscode);
+    commands.setCommandColorHighlight(context, vscode);
 
     // & Add theme
-    let themes = ["Aesthetic", "ALXS-white", "CheatSheet"];
-    let customisableThemes = ["Aesthetic", "CheatSheet"];
-
-    for (let theme of themes) {
-        let disposableTheme = vscode.commands.registerCommand(
-            `alxs-theme-extension.addTheme_${theme.toLowerCase()}`,
-            function () {
-                // * deprecated, this is the old version using the cdn, now we use the local version
-                // let content = `<script src=\"https://cdn.jsdelivr.net/gh/ALXS-GitHub/Markdown-Themes@latest/${theme}/cdnimport.js\"></script>\n`;
-
-                // Initialize content with the local path
-                let content = `<script src="${config.THEMES_URL}/${theme}/import.js" defer></script>\n`;
-
-                if (customisableThemes.includes(theme)) {
-                    content +=
-                        "<script defer>\n" +
-                        '\twindow.addEventListener("load", function() {\n' +
-                        '\tdocument.color.setColor("blue");\n' +
-                        '\tdocument.font.setFont("arial");\n' +
-                        "});\n" +
-                        "</script>\n";
-                }
-
-                let editor = vscode.window.activeTextEditor;
-                if (!editor) {
-                    return; // No open text editor
-                }
-
-                let position = editor.selection.active;
-                editor.edit((editBuilder) => {
-                    editBuilder.insert(position, content);
-                });
-            }
-        );
-
-        context.subscriptions.push(disposableTheme);
-    }
+    
+    commands.setCommandTheme(context, vscode);
 
     // & Components
     // @ usual components
-    let components = ["plan", "pagebreak"];
-
-    for (let component of components) {
-        let disposableComponent = vscode.commands.registerCommand(
-            `alxs-theme-extension.components${component}`,
-            function () {
-                let editor = vscode.window.activeTextEditor;
-                if (!editor) {
-                    return; // No open text editor
-                }
-
-                let position = editor.selection.active;
-                editor.edit((editBuilder) => {
-                    editBuilder.insert(
-                        position,
-                        `<${component}></${component}>`
-                    );
-                });
-            }
-        );
-
-        context.subscriptions.push(disposableComponent);
-    }
+    
+    commands.setCommandComponents(context, vscode);
 
     // @ footnote component
-    let disposableFootnote = vscode.commands.registerCommand(
-        `alxs-theme-extension.componentsfnote`,
-        function () {
-            let editor = vscode.window.activeTextEditor;
-            if (!editor) {
-                return; // No open text editor
-            }
-
-            let selection = editor.selection;
-            let text = editor.document.getText(selection);
-
-            editor
-                .edit((editBuilder) => {
-                    editBuilder.replace(
-                        selection,
-                        `<fnote>${text} || </fnote>`
-                    );
-                })
-                .then((success) => {
-                    // Move cursor to the end of the text
-                    if (success) {
-                        let position = editor.selection.start;
-                        let newPosition = position.translate(
-                            0,
-                            7 + text.length
-                        ); // 7 is the length of "<fnote>"
-                        let newSelection = new vscode.Selection(
-                            newPosition,
-                            newPosition
-                        );
-                        editor.selection = newSelection;
-                    }
-                });
-        }
-    );
-
-    context.subscriptions.push(disposableFootnote);
+    
+    commands.setCommandComponentFootnote(context, vscode);
 
     // @ custom blocks components
-    let customBlocks = [
-        "definition",
-        "note",
-        "warning",
-        "tip",
-        "important",
-        "error",
-        "sucess",
-        "abstract",
-        "example",
-        "question",
-        "quote",
-        "bug",
-    ];
-    for (let block of customBlocks) {
-        let disposableBlock = vscode.commands.registerCommand(
-            `alxs-theme-extension.componentscustomblock${block}`,
-            function () {
-                let editor = vscode.window.activeTextEditor;
-                if (!editor) {
-                    return; // No open text editor
-                }
 
-                let selection = editor.selection;
-                let text = editor.document.getText(selection);
-                text = text.replace(/\n/g, "\n\t");
-
-                editor
-                    .edit((editBuilder) => {
-                        editBuilder.replace(
-                            selection,
-                            `<div class=\"${block}\">\n\t${text}\n</div>`
-                        );
-                    })
-                    .then((success) => {
-                        // Move cursor to the end of the text
-                        if (success) {
-                            let lines = text.split("\n");
-                            let lastLine = lines[lines.length - 1];
-                            let position = editor.selection.start;
-                            let newPosition = position.translate(
-                                lines.length,
-                                lastLine.length + 1
-                            ); // 12 is the length of "<div class=\"\">"
-                            let newSelection = new vscode.Selection(
-                                newPosition,
-                                newPosition
-                            );
-                            editor.selection = newSelection;
-                        }
-                    });
-            }
-        );
-
-        context.subscriptions.push(disposableBlock);
-    }
+    commands.setCommandComponentCustomBlocks(context, vscode);
 
     // & Add custom boxes
-    let boxesColor = [
-        "red",
-        "blue",
-        "green",
-        "orange",
-        "yellow",
-        "purple",
-        "pink",
-        "white",
-        "color",
-    ];
 
     // @ usual boxes
-    for (let color in boxesColor) {
-        let disposableBox = vscode.commands.registerCommand(
-            `alxs-theme-extension.boxes${boxesColor[color]}`,
-            function () {
-                let editor = vscode.window.activeTextEditor;
-                if (!editor) {
-                    return; // No open text editor
-                }
 
-                let selection = editor.selection;
-                let text = editor.document.getText(selection);
-                text = text.replace(/\n/g, "\n\t");
-
-                editor
-                    .edit((editBuilder) => {
-                        editBuilder.replace(
-                            selection,
-                            `<${boxesColor[color]}box>\n\t${text}\n</${boxesColor[color]}box>`
-                        );
-                    })
-                    .then((success) => {
-                        // Move cursor to the end of the text
-                        if (success) {
-                            let lines = text.split("\n");
-                            let lastLine = lines[lines.length - 1];
-                            let position = editor.selection.start;
-                            let newPosition = position.translate(
-                                lines.length,
-                                lastLine.length + 1
-                            ); // 12 is the length of "<div class=\"\">"
-                            let newSelection = new vscode.Selection(
-                                newPosition,
-                                newPosition
-                            );
-                            editor.selection = newSelection;
-                        }
-                    });
-            }
-        );
-
-        context.subscriptions.push(disposableBox);
-    }
+    commands.setCommandCustomBoxes(context, vscode);
 
     // @ formula boxes
-    for (let color in boxesColor) {
-        let disposableBox = vscode.commands.registerCommand(
-            `alxs-theme-extension.boxesformula${boxesColor[color]}`,
-            function () {
-                let editor = vscode.window.activeTextEditor;
-                if (!editor) {
-                    return; // No open text editor
-                }
-
-                let selection = editor.selection;
-                let text = editor.document.getText(selection);
-                text = text.replace(/\n/g, "\n\t");
-
-                editor
-                    .edit((editBuilder) => {
-                        editBuilder.replace(
-                            selection,
-                            `<${boxesColor[color]}formula>\n\t${text}\n</${boxesColor[color]}formula>`
-                        );
-                    })
-                    .then((success) => {
-                        // Move cursor to the end of the text
-                        if (success) {
-                            let lines = text.split("\n");
-                            let lastLine = lines[lines.length - 1];
-                            let position = editor.selection.start;
-                            let newPosition = position.translate(
-                                lines.length,
-                                lastLine.length + 1
-                            ); // 12 is the length of "<div class=\"\">"
-                            let newSelection = new vscode.Selection(
-                                newPosition,
-                                newPosition
-                            );
-                            editor.selection = newSelection;
-                        }
-                    });
-            }
-        );
-
-        context.subscriptions.push(disposableBox);
-    }
+    
+    commands.setCommandCustomBoxesFormulas(context, vscode);
 
     // & grids
 
@@ -905,21 +561,21 @@ function activate(context) {
         getChildren: (element) => {
             if (!element) {
                 return [
-                    { label: "Theme", id: "theme", iconPath: vscode.Uri.file(context.asAbsolutePath("media/theme.png")) },
+                    { label: "Theme", id: "theme", iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/theme.png")) },
                     {
                         label: "Color",
                         id: "color",
                         iconPath: vscode.Uri.file(
-                            context.asAbsolutePath("media/colors.png")
+                            context.asAbsolutePath("src/media/colors.png")
                         ),
                     },
-                    { label: "Alignement", id: "alignement", iconPath: vscode.Uri.file(context.asAbsolutePath("media/alignement/alignement.png")) },
-                    { label: "Components", id: "components", iconPath: vscode.Uri.file(context.asAbsolutePath("media/component.png")) },
-                    { label: "Custom Boxes", id: "custom-boxes", iconPath: vscode.Uri.file(context.asAbsolutePath("media/boxes/boxsection.png")) },
-                    { label: "Font Size", id: "font-size", iconPath: vscode.Uri.file(context.asAbsolutePath("media/font-size.png")) },
-                    { label: "Text Effects", id: "text-effects", iconPath: vscode.Uri.file(context.asAbsolutePath("media/text-effect/text-effect.png")) },
-                    { label: "Convert to PDF", command: "alxs-theme-extension.mdToPdf", iconPath: vscode.Uri.file(context.asAbsolutePath("media/convert-pdf.png"))},
-                    { label: "Conversion Options", id: "conversion-options", iconPath: vscode.Uri.file(context.asAbsolutePath("media/convert-pdf.png"))},
+                    { label: "Alignement", id: "alignement", iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/alignement/alignement.png")) },
+                    { label: "Components", id: "components", iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/component.png")) },
+                    { label: "Custom Boxes", id: "custom-boxes", iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/boxes/boxsection.png")) },
+                    { label: "Font Size", id: "font-size", iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/font-size.png")) },
+                    { label: "Text Effects", id: "text-effects", iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/text-effect/text-effect.png")) },
+                    { label: "Convert to PDF", command: "alxs-theme-extension.mdToPdf", iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/convert-pdf.png"))},
+                    { label: "Conversion Options", id: "conversion-options", iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/convert-pdf.png"))},
                     { label: "Restart Server", command: "alxs-theme-extension.restartServer", iconPath: new vscode.ThemeIcon('refresh')},
                 ];
             } else
@@ -950,7 +606,7 @@ function activate(context) {
                                 id: "highlight-color",
                                 iconPath: vscode.Uri.file(
                                     context.asAbsolutePath(
-                                        "media/highlighter/highlightersection.png"
+                                        "src/media/highlighter/highlightersection.png"
                                     )
                                 ),
                             },
@@ -958,7 +614,7 @@ function activate(context) {
                                 label: "Text Color",
                                 id: "text-color",
                                 iconPath: vscode.Uri.file(
-                                    context.asAbsolutePath("media/T/Tsection.png")
+                                    context.asAbsolutePath("src/media/T/Tsection.png")
                                 ),
                             },
                         ];
@@ -968,47 +624,47 @@ function activate(context) {
                             {
                                 label: "Color Blue",
                                 command: "alxs-theme-extension.colorblue",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/T/Tblue.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/T/Tblue.png")),
                             },
                             {
                                 label: "Color Red",
                                 command: "alxs-theme-extension.colorred",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/T/Tred.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/T/Tred.png")),
                             },
                             {
                                 label: "Color Green",
                                 command: "alxs-theme-extension.colorgreen",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/T/Tgreen.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/T/Tgreen.png")),
                             },
                             {
                                 label: "Color Orange",
                                 command: "alxs-theme-extension.colororange",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/T/Torange.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/T/Torange.png")),
                             },
                             {
                                 label: "Color Yellow",
                                 command: "alxs-theme-extension.coloryellow",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/T/Tyellow.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/T/Tyellow.png")),
                             },
                             {
                                 label: "Color Purple",
                                 command: "alxs-theme-extension.colorpurple",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/T/Tpurple.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/T/Tpurple.png")),
                             },
                             {
                                 label: "Color Pink",
                                 command: "alxs-theme-extension.colorpink",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/T/Tpink.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/T/Tpink.png")),
                             },
                             {
                                 label: "Color White",
                                 command: "alxs-theme-extension.colorwhite",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/T/Twhite.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/T/Twhite.png")),
                             },
                             {
                                 label: "Color Theme Color",
                                 command: "alxs-theme-extension.colorcolor",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/T/Tcolor.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/T/Tcolor.png")),
                             },
                         ];
                     case "highlight-color":
@@ -1016,47 +672,47 @@ function activate(context) {
                             {
                                 label: "Highlight Blue",
                                 command: "alxs-theme-extension.highlightblue",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/highlighter/highlighterblue.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/highlighter/highlighterblue.png")),
                             },
                             {
                                 label: "Highlight Red",
                                 command: "alxs-theme-extension.highlightred",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/highlighter/highlighterred.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/highlighter/highlighterred.png")),
                             },
                             {
                                 label: "Highlight Green",
                                 command: "alxs-theme-extension.highlightgreen",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/highlighter/highlightergreen.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/highlighter/highlightergreen.png")),
                             },
                             {
                                 label: "Highlight Orange",
                                 command: "alxs-theme-extension.highlightorange",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/highlighter/highlighterorange.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/highlighter/highlighterorange.png")),
                             },
                             {
                                 label: "Highlight Yellow",
                                 command: "alxs-theme-extension.highlightyellow",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/highlighter/highlighteryellow.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/highlighter/highlighteryellow.png")),
                             },
                             {
                                 label: "Highlight Purple",
                                 command: "alxs-theme-extension.highlightpurple",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/highlighter/highlighterpurple.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/highlighter/highlighterpurple.png")),
                             },
                             {
                                 label: "Highlight Pink",
                                 command: "alxs-theme-extension.highlightpink",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/highlighter/highlighterpink.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/highlighter/highlighterpink.png")),
                             },
                             {
                                 label: "Highlight White",
                                 command: "alxs-theme-extension.highlightwhite",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/highlighter/highlighterwhite.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/highlighter/highlighterwhite.png")),
                             },
                             {
                                 label: "Highlight Theme Color",
                                 command: "alxs-theme-extension.highlightcolor",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/highlighter/highlightercolor.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/highlighter/highlightercolor.png")),
                             },
                         ];
                     case "alignement":
@@ -1064,19 +720,19 @@ function activate(context) {
                             {
                                 label: "Align Left",
                                 command: "alxs-theme-extension.alignementsleft",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/alignement/left.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/alignement/left.png")),
                             },
                             {
                                 label: "Align Center",
                                 command:
                                     "alxs-theme-extension.alignementscenter",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/alignement/center.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/alignement/center.png")),
                             },
                             {
                                 label: "Align Right",
                                 command:
                                     "alxs-theme-extension.alignementsright",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/alignement/right.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/alignement/right.png")),
                             },
                         ];
 
@@ -1207,52 +863,52 @@ function activate(context) {
                             {
                                 label: "Table Red",
                                 command: "alxs-theme-extension.tablered",
-                                // iconPath: vscode.Uri.file(context.asAbsolutePath("media/table/table-red.png")),
+                                // iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/table/table-red.png")),
                             },
                             {
                                 label: "Table Blue",
                                 command: "alxs-theme-extension.tableblue",
-                                // iconPath: vscode.Uri.file(context.asAbsolutePath("media/table/table-blue.png")),
+                                // iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/table/table-blue.png")),
                             },
                             {
                                 label: "Table Green",
                                 command: "alxs-theme-extension.tablegreen",
-                                // iconPath: vscode.Uri.file(context.asAbsolutePath("media/table/table-green.png")),
+                                // iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/table/table-green.png")),
                             },
                             {
                                 label: "Table Orange",
                                 command: "alxs-theme-extension.tableorange",
-                                // iconPath: vscode.Uri.file(context.asAbsolutePath("media/table/table-orange.png")),
+                                // iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/table/table-orange.png")),
                             },
                             {
                                 label: "Table Yellow",
                                 command: "alxs-theme-extension.tableyellow",
-                                // iconPath: vscode.Uri.file(context.asAbsolutePath("media/table/table-yellow.png")),
+                                // iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/table/table-yellow.png")),
                             },
                             {
                                 label: "Table Purple",
                                 command: "alxs-theme-extension.tablepurple",
-                                // iconPath: vscode.Uri.file(context.asAbsolutePath("media/table/table-purple.png")),
+                                // iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/table/table-purple.png")),
                             },
                             {
                                 label: "Table Pink",
                                 command: "alxs-theme-extension.tablepink",
-                                // iconPath: vscode.Uri.file(context.asAbsolutePath("media/table/table-pink.png")),
+                                // iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/table/table-pink.png")),
                             },
                             {
                                 label: "Table White",
                                 command: "alxs-theme-extension.tablewhite",
-                                // iconPath: vscode.Uri.file(context.asAbsolutePath("media/table/table-white.png")),
+                                // iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/table/table-white.png")),
                             },
                             {
                                 label: "Table Theme Color",
                                 command: "alxs-theme-extension.tablecolor",
-                                // iconPath: vscode.Uri.file(context.asAbsolutePath("media/table/table-color.png")),
+                                // iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/table/table-color.png")),
                             },
                             {
                                 label: "Convert to Table",
                                 command: "alxs-theme-extension.convertToTable",
-                                // iconPath: vscode.Uri.file(context.asAbsolutePath("media/table/convert.png")),
+                                // iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/table/convert.png")),
                             }
                         ];
                     case "custom-boxes":
@@ -1260,12 +916,12 @@ function activate(context) {
                             {
                                 label: "Boxes",
                                 id: "boxes",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/boxes/boxsection.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/boxes/boxsection.png")),
                             },
                             {
                                 label: "Formulas",
                                 id: "formulas",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/formula/formulasection.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/formula/formulasection.png")),
                             },
                         ];
                     case "boxes":
@@ -1273,47 +929,47 @@ function activate(context) {
                             {
                                 label: "Red Box",
                                 command: "alxs-theme-extension.boxesred",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/boxes/boxred.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/boxes/boxred.png")),
                             },
                             {
                                 label: "Blue Box",
                                 command: "alxs-theme-extension.boxesblue",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/boxes/boxblue.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/boxes/boxblue.png")),
                             },
                             {
                                 label: "Green Box",
                                 command: "alxs-theme-extension.boxesgreen",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/boxes/boxgreen.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/boxes/boxgreen.png")),
                             },
                             {
                                 label: "Orange Box",
                                 command: "alxs-theme-extension.boxesorange",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/boxes/boxorange.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/boxes/boxorange.png")),
                             },
                             {
                                 label: "Yellow Box",
                                 command: "alxs-theme-extension.boxesyellow",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/boxes/boxyellow.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/boxes/boxyellow.png")),
                             },
                             {
                                 label: "Purple Box",
                                 command: "alxs-theme-extension.boxespurple",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/boxes/boxpurple.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/boxes/boxpurple.png")),
                             },
                             {
                                 label: "Pink Box",
                                 command: "alxs-theme-extension.boxespink",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/boxes/boxpink.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/boxes/boxpink.png")),
                             },
                             {
                                 label: "White Box",
                                 command: "alxs-theme-extension.boxeswhite",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/boxes/boxwhite.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/boxes/boxwhite.png")),
                             },
                             {
                                 label: "Theme Color Box",
                                 command: "alxs-theme-extension.boxescolor",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/boxes/boxcolor.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/boxes/boxcolor.png")),
                             },
                         ];
                     case "formulas":
@@ -1321,53 +977,53 @@ function activate(context) {
                             {
                                 label: "Red Formula",
                                 command: "alxs-theme-extension.boxesformulared",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/formula/formulared.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/formula/formulared.png")),
                             },
                             {
                                 label: "Blue Formula",
                                 command: "alxs-theme-extension.boxesformulablue",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/formula/formulablue.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/formula/formulablue.png")),
                             },
                             {
                                 label: "Green Formula",
                                 command:
                                     "alxs-theme-extension.boxesformulagreen",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/formula/formulagreen.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/formula/formulagreen.png")),
                             },
                             {
                                 label: "Orange Formula",
                                 command:
                                     "alxs-theme-extension.boxesformulaorange",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/formula/formulaorange.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/formula/formulaorange.png")),
                             },
                             {
                                 label: "Yellow Formula",
                                 command:
                                     "alxs-theme-extension.boxesformulayellow",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/formula/formulayellow.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/formula/formulayellow.png")),
                             },
                             {
                                 label: "Purple Formula",
                                 command:
                                     "alxs-theme-extension.boxesformulapurple",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/formula/formulapurple.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/formula/formulapurple.png")),
                             },
                             {
                                 label: "Pink Formula",
                                 command: "alxs-theme-extension.boxesformulapink",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/formula/formulapink.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/formula/formulapink.png")),
                             },
                             {
                                 label: "White Formula",
                                 command:
                                     "alxs-theme-extension.boxesformulawhite",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/formula/formulawhite.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/formula/formulawhite.png")),
                             },
                             {
                                 label: "Theme Color Formula",
                                 command:
                                     "alxs-theme-extension.boxesformulacolor",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/formula/formulacolor.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/formula/formulacolor.png")),
                             },
                         ];
                     case "font-size":
@@ -1442,22 +1098,22 @@ function activate(context) {
                             {
                                 label: "Bold",
                                 command: "alxs-theme-extension.effectsb",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/text-effect/bold.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/text-effect/bold.png")),
                             },
                             {
                                 label: "Italic",
                                 command: "alxs-theme-extension.effectsi",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/text-effect/italic.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/text-effect/italic.png")),
                             },
                             {
                                 label: "Underline",
                                 command: "alxs-theme-extension.effectsu",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/text-effect/underline.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/text-effect/underline.png")),
                             },
                             {
                                 label: "Strike",
                                 command: "alxs-theme-extension.effectss",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/text-effect/strikethrough.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/text-effect/strikethrough.png")),
                             },
                         ];
                     case "conversion-options":
@@ -1465,12 +1121,12 @@ function activate(context) {
                             {
                                 label: "Convert to PDF",
                                 command: "alxs-theme-extension.mdToPdf",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/convert-pdf.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/convert-pdf.png")),
                             },
                             {
                                 label: "Convert to One Page PDF",
                                 command: "alxs-theme-extension.onePageMdToPdf",
-                                iconPath: vscode.Uri.file(context.asAbsolutePath("media/convert-pdf.png")),
+                                iconPath: vscode.Uri.file(context.asAbsolutePath("src/media/convert-pdf.png")),
                             },
                         ];
                 }
